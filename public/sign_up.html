@@ -22,24 +22,24 @@
 			</div>
 		</form>
 
-		<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+		<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
 		<script>
-			const $form = $('#signUpForm');
+			const $form = $('#signUpForm')
 			$form.on('submit', (e) => {
-				e.preventDefault();
-				const name = $form.find('input[name=name]').val();
-				const password = $form.find('input[name=password]').val();
-				console.log(name, password);
+				e.preventDefault()
+				const name = $form.find('input[name=name]').val()
+				const password = $form.find('input[name=password]').val()
+				console.log(name, password)
 				$.ajax({
 					method: 'POST',
 					url: '/sign_up',
 					contentType: 'text/json; charset=UTF-8',
 					data: JSON.stringify({ name, password }),
 				}).then(() => {
-					alert('注册成功');
-					location.href = '/sign_in.html';
-				});
-			});
+					alert('注册成功')
+					location.href = '/sign_in.html'
+				})
+			})
 		</script>
 	</body>
 </html>

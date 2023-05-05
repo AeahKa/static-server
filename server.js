@@ -1,152 +1,152 @@
-var http = require('http');
-var fs = require('fs');
-var url = require('url');
-const { buffer } = require('stream/consumers');
-var port = process.argv[2];
+var http = require('http')
+var fs = require('fs')
+var url = require('url')
+const { buffer } = require('stream/consumers')
+var port = process.argv[2]
 
 if (!port) {
-	console.log('请指定端口号\nnode server.js 8888 这样不会吗？');
-	process.exit(1);
+	console.log('请指定端口号\nnode server.js 8888 这样不会吗？')
+	process.exit(1)
 }
 
 var server = http.createServer(function (request, response) {
-	var parsedUrl = url.parse(request.url, true);
-	var pathWithQuery = request.url;
-	var queryString = '';
+	var parsedUrl = url.parse(request.url, true)
+	var pathWithQuery = request.url
+	var queryString = ''
 	if (pathWithQuery.indexOf('?') >= 0) {
-		queryString = pathWithQuery.substring(pathWithQuery.indexOf('?'));
+		queryString = pathWithQuery.substring(pathWithQuery.indexOf('?'))
 	}
-	var path = parsedUrl.pathname;
-	var query = parsedUrl.query;
-	var method = request.method;
+	var path = parsedUrl.pathname
+	var query = parsedUrl.query
+	var method = request.method
 
 	/******** 从这里开始看，上面不要看 ************/
-	const session = JSON.parse(fs.readFileSync('./session.json'));
+	const session = JSON.parse(fs.readFileSync('./session.json'))
 
-	console.log('有人发请求过来啦！路径（带查询参数）为：' + pathWithQuery);
+	console.log('有人发请求过来啦！路径（带查询参数）为：' + pathWithQuery)
 
 	if (path === '/sign_up' && method === 'POST') {
-		response.setHeader('Content-Type', 'text/html;charset=utf-8');
-		const userArray = JSON.parse(fs.readFileSync('./db/users.json'));
-		const array = [];
+		response.setHeader('Content-Type', 'text/html;charset=utf-8')
+		const userArray = JSON.parse(fs.readFileSync('./db/users.json'))
+		const array = []
 		request.on('data', (chunk) => {
-			array.push(chunk);
-		});
+			array.push(chunk)
+		})
 		request.on('end', () => {
-			const string = Buffer.concat(array).toString();
-			const obj = JSON.parse(string);
-			console.log(obj.name);
-			console.log(obj.password);
-			const lastUser = userArray[userArray.length - 1];
+			const string = Buffer.concat(array).toString()
+			const obj = JSON.parse(string)
+			console.log(obj.name)
+			console.log(obj.password)
+			const lastUser = userArray[userArray.length - 1]
 			const newUser = {
-				// id 为最后一个用户的 id + 1
+				// 新 id 为最后一个用户的 id + 1
 				id: lastUser ? lastUser.id + 1 : 1,
 				name: obj.name,
 				password: obj.password,
-			};
-			userArray.push(newUser);
-			fs.writeFileSync('./db/users.json', JSON.stringify(userArray));
-			response.end();
-		});
+			}
+			userArray.push(newUser)
+			fs.writeFileSync('./db/users.json', JSON.stringify(userArray))
+			response.end()
+		})
 	} else if (path === '/sign_in' && method === 'POST') {
-		response.setHeader('Content-Type', 'text/html;charset=utf-8');
-		const userArray = JSON.parse(fs.readFileSync('./db/users.json'));
-		const array = [];
+		response.setHeader('Content-Type', 'text/html;charset=utf-8')
+		const userArray = JSON.parse(fs.readFileSync('./db/users.json'))
+		const array = []
 		request.on('data', (chunk) => {
-			array.push(chunk);
-		});
+			array.push(chunk)
+		})
 		request.on('end', () => {
-			const string = Buffer.concat(array).toString();
-			const obj = JSON.parse(string);
+			const string = Buffer.concat(array).toString()
+			const obj = JSON.parse(string)
 			const user = userArray.find(
 				(user) => user.name === obj.name && user.password === obj.password
-			);
+			)
 			if (user === undefined) {
-				response.statusCode = 400;
-				response.setHeader('Content-Type', 'text/json;charset=utf-8');
-				response.end(`{"errorCode":4001}`);
+				response.statusCode = 400
+				response.setHeader('Content-Type', 'text/json;charset=utf-8')
+				response.end(`{"errorCode":4001}`)
 			} else {
-				response.statusCode = 200;
-				const random = Math.random();
-				session[random] = { user_id: user.id };
-				fs.writeFileSync('./session.json', JSON.stringify(session));
-				response.setHeader('Set-Cookie', `session_id=${random}; HttpOnly`);
-				response.end();
+				response.statusCode = 200
+				const random = Math.random()
+				session[random] = { user_id: user.id }
+				fs.writeFileSync('./session.json', JSON.stringify(session))
+				response.setHeader('Set-Cookie', `session_id=${random}; HttpOnly`)
+				response.end()
 			}
-		});
+		})
 	} else if (path === '/home.html') {
-		const cookie = request.headers['cookie'];
-		console.log(cookie);
-		let sessionId;
+		const cookie = request.headers['cookie']
+		console.log(cookie)
+		let sessionId
 		try {
 			sessionId = cookie
 				.split(';')
 				.filter((s) => s.indexOf('session_id') >= 0)[0]
-				.split('=')[1];
+				.split('=')[1]
 		} catch (error) {}
 		if (sessionId && session[sessionId]) {
-			const userId = session[sessionId].user_id;
-			const userArray = JSON.parse(fs.readFileSync('./db/users.json'));
-			const homeHtml = fs.readFileSync('./public/home.html').toString();
-			const user = userArray.find((user) => user.id === userId);
-			let string;
+			const userId = session[sessionId].user_id
+			const userArray = JSON.parse(fs.readFileSync('./db/users.json'))
+			const homeHtml = fs.readFileSync('./public/home.html').toString()
+			const user = userArray.find((user) => user.id === userId)
+			let string
 			if (user) {
 				string = homeHtml
 					.replace('{{loginStatus}}', `已登录`)
-					.replace('{{user.name}}', user.name);
-				response.write(string);
+					.replace('{{user.name}}', user.name)
+				response.write(string)
 			} else {
 				string = homeHtml
 					.replace('{{loginStatus}}', '未登录')
-					.replace('{{user.name}}', '');
-				response.write(string);
+					.replace('{{user.name}}', '')
+				response.write(string)
 			}
 		} else {
-			const homeHtml = fs.readFileSync('./public/home.html').toString();
+			const homeHtml = fs.readFileSync('./public/home.html').toString()
 			const string = homeHtml
 				.replace('{{loginStatus}}', '未登录')
-				.replace('{{user.name}}', '');
-			response.write(string);
+				.replace('{{user.name}}', '')
+			response.write(string)
 		}
-		response.end();
+		response.end()
 	} else {
-		response.statusCode = 200;
+		response.statusCode = 200
 
 		// 默认首页
-		const filePath = path === '/' ? '/index.html' : path;
+		const filePath = path === '/' ? '/index.html' : path
 		//获取fileType
-		const index = filePath.lastIndexOf('.');
-		const fileNameEx = filePath.substring(index);
+		const index = filePath.lastIndexOf('.')
+		const fileNameEx = filePath.substring(index)
 		const fileType = {
 			'.html': 'text/html',
 			'.css': 'text/css',
 			'.js': 'text/js',
 			'.png': 'image/png',
 			'.jpg': 'image/jpg',
-		};
+		}
 		response.setHeader(
 			'Content-Type',
 			`${fileType[fileNameEx] || 'text/html'};charset=utf-8`
-		);
+		)
 
-		let content;
+		let content
 		try {
-			content = fs.readFileSync(`./public${filePath}`);
+			content = fs.readFileSync(`./public${filePath}`)
 		} catch (error) {
-			content = '文件不存在';
-			response.statusCode = 404;
+			content = '文件不存在'
+			response.statusCode = 404
 		}
-		response.write(content);
-		response.end();
+		response.write(content)
+		response.end()
 	}
 
 	/******** 代码结束，下面不要看 ************/
-});
+})
 
-server.listen(port);
+server.listen(port)
 console.log(
 	'监听 ' +
 		port +
 		' 成功\n请用在空中转体720度然后用电饭煲打开 http://localhost:' +
 		port
-);
+)
